@@ -39,7 +39,7 @@ An example of variant operator:
 
 ```java
 @Data
-public static class JobFilter {
+public class JobFilter {
     private OperatorAndValue<String> name;
 }
 
