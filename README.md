@@ -85,7 +85,7 @@ if json is:
 ```
 sql will be:
 ```sql
-SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_,
+SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_
 FROM   job job0_
 WHERE job0_.name =?
 ```
@@ -100,7 +100,7 @@ if json is:
 ```
 sql will be:
 ```sql
-SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_,
+SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_
 FROM   job job0_
 WHERE job0_.name IS NULL
 ```
@@ -116,7 +116,7 @@ if json is:
 ```
 sql will be:
 ```sql
-SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_,
+SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_
 FROM   job job0_
 WHERE job0_.name <>?
 ```
@@ -132,7 +132,7 @@ if json is:
 ```
 sql will be:
 ```sql
-SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_,
+SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_
 FROM   job job0_
 WHERE job0_.name like ? -- where ? is 'string%'
 ```
@@ -148,7 +148,7 @@ if json is:
 ```
 sql will be:
 ```sql
-SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_,
+SELECT job0_.id AS col_0_0_, job0_.name AS col_1_0_
 FROM   job job0_
 WHERE job0_.name in (? , ? , ?)
 ```
