@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import querybuilder.structure.Impl.Field;
 import querybuilder.structure.QueryBuilder;
 import querybuilder.structure.enums.SortDirection;
 
@@ -36,7 +37,10 @@ public abstract class PageableQuery<T> {
         queryBuilder.offset((int) pageable.getOffset());
         queryBuilder.limit(pageable.getPageSize());
 
-        pageable.getSort().forEach(o -> queryBuilder.orderBy(o.getProperty(), mapDirection(o.getDirection())));
+        pageable.getSort().forEach(o ->
+                queryBuilder.orderBy(
+                        Field.of(null, o.getProperty(), mapDirection(o.getDirection()))
+                ));
     }
 
     private SortDirection mapDirection(Sort.Direction direction) {

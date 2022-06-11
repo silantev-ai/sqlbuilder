@@ -3,6 +3,7 @@ package querybuilder;
 import querybuilder.structure.*;
 import querybuilder.structure.Impl.Field;
 import querybuilder.structure.Impl.JoinTable;
+import querybuilder.structure.Impl.Table;
 import querybuilder.structure.enums.SortDirection;
 
 import javax.persistence.EntityManager;
@@ -17,7 +18,8 @@ public class CustomCriteriaBuilder<T> {
     private final CriteriaBuilder cb;
     private final CriteriaQuery<Tuple> cq;
     private final Root<T> root;
-    private final Map<String, Join<T, ?>> joins;
+    private final Map<Table, Join<T, ?>> joins;
+    private final Map<Table, From<?, ?>> tables;
     private final Integer offset;
     private final Integer limit;
 
@@ -26,52 +28,55 @@ public class CustomCriteriaBuilder<T> {
         cb = entityManager.getCriteriaBuilder();
         cq = cb.createQuery(Tuple.class);
         joins = new HashMap<>();
+        tables = new HashMap<>();
         root = cq.from(model);
         this.offset = offset;
         this.limit = limit;
     }
 
+    public CustomCriteriaBuilder<T> processTables(Collection<Table> tables) {
+        tables.forEach(table -> {
+            From<?, ?> from = cq.from(table.getEntityCls());
+            this.tables.put(table, from);
+        });
+
+        return this;
+    }
+
     public CustomCriteriaBuilder<T> processJoins(Map<String, JoinTable> joinTables) {
         joinTables.values().forEach(this::processJoin);
+
+        // apply conditions on joins if they exist
+        joinTables.values().forEach(
+              jt -> Optional.ofNullable(jt.getConditions())
+                      .stream()
+                      .flatMap(Arrays::stream)
+                      .map(statement -> statement.getPredicate(cb, this::getSource))
+                      .forEach(predicate -> joins.get(jt).on(predicate))
+        );
+
         return this;
     }
 
     private void processJoin(JoinTable jt) {
         Join<T, ?> joinTable;
         JoinType joinType = Optional.ofNullable(jt.getJoinType()).orElse(JoinType.INNER);
-        if (jt.getParentTableAlias() == null) {
+        if (jt.getParent() == null) {
             joinTable = root.join(jt.getField(), joinType);
         } else {
-            joinTable = getSource(jt.getParentTableAlias()).join(jt.getField(), joinType);
+            joinTable = getSource(jt.getParent()).join(jt.getField(), joinType);
         }
-        joins.put(jt.getAlias(), joinTable);
+        joins.put(jt, joinTable);
     }
 
-    public CustomCriteriaBuilder<T> processSelectionFields(List<Field> selectionFields) {
-        cq.multiselect(selectionFields.stream().map(this::getSelection).collect(Collectors.toList()));
+    public CustomCriteriaBuilder<T> processSelectionFields(List<SqlSelection> selectionFields, boolean distinct) {
+        cq.multiselect(selectionFields.stream().map(this::getSelection).collect(Collectors.toList()))
+                .distinct(distinct);
         return this;
     }
 
-    private Selection<?> getSelection(Field field) {
-        if (field.getAggregateFunc() == null) {
-            return getSource(field.getTableAlias()).get(field.getField()).alias(field.getFieldAlias());
-        } else {
-            Path<Number> fieldPath = getSource(field.getTableAlias()).get(field.getField());
-            switch (field.getAggregateFunc()) {
-                case COUNT:
-                    return cb.count(fieldPath).alias(field.getFieldAlias());
-                case SUM:
-                    return cb.sum(fieldPath).alias(field.getFieldAlias());
-                case MIN:
-                    return cb.min(fieldPath).alias(field.getFieldAlias());
-                case MAX:
-                    return cb.max(fieldPath).alias(field.getFieldAlias());
-                case AVG:
-                    return cb.avg(fieldPath).alias(field.getFieldAlias());
-                default:
-                    return getSource(field.getTableAlias()).get(field.getField()).alias(field.getFieldAlias());
-            }
-        }
+    private Selection<?> getSelection(SqlSelection selection) {
+        return selection.getSelection(cb, this::getSource);
     }
 
     public CustomCriteriaBuilder<T> processWhere(Deque<WhereToken> elements) {
@@ -82,7 +87,14 @@ public class CustomCriteriaBuilder<T> {
     }
 
     public CustomCriteriaBuilder<T> processGroupBy(List<Field> groupBy) {
-        cq.groupBy(groupBy.stream().map(f -> getSource(f.getTableAlias()).get(f.getField())).collect(Collectors.toList()));
+        cq.groupBy(groupBy.stream().map(f -> getSource(f.getTable()).get(f.getField())).collect(Collectors.toList()));
+        return this;
+    }
+
+    public CustomCriteriaBuilder<T> processHaving(Deque<WhereToken> elements) {
+        if (!elements.isEmpty()) {
+            cq.having(evaluateExpressions(elements));
+        }
         return this;
     }
 
@@ -92,13 +104,12 @@ public class CustomCriteriaBuilder<T> {
     }
 
     private Order getOrder(Field field) {
-        Expression<?> path = getSource(field.getTableAlias()).get(field.getField());
+        Expression<?> path = getSource(field.getTable()).get(field.getField());
         return field.getSortDirection() == SortDirection.ASC ? cb.asc(path) : cb.desc(path);
     }
 
     public List<Tuple> execute() {
         TypedQuery<Tuple> query = entityManager.createQuery(cq);
-
         Optional.ofNullable(offset).ifPresent(query::setFirstResult);
         Optional.ofNullable(limit).ifPresent(query::setMaxResults);
 
@@ -189,11 +200,16 @@ public class CustomCriteriaBuilder<T> {
     }
 
     private Predicate combine(Statement statement) {
-        return statement.getPredicate(cb, getSource(statement.getAlias()));
+        return statement.getPredicate(cb, this::getSource);
     }
 
-
-    private From<T, ?> getSource(String alias) {
-        return alias == null ? root : joins.get(alias);
+    private From<?, ?> getSource(Table table) {
+        if (table == null) {
+            return root;
+        } else if (joins.containsKey(table)) {
+            return joins.get(table);
+        } else {
+            return tables.get(table);
+        }
     }
 }

@@ -1,7 +1,10 @@
 package querybuilder.structure;
 
 
+import querybuilder.structure.enums.Logical;
+
 import java.util.Deque;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public interface Where {
@@ -9,6 +12,10 @@ public interface Where {
     OpenBracket openBracket();
     Statement statement(Statement statement);
     QueryBuilder endWhere();
+    default QueryBuilder endHaving() {
+        return endWhere();
+    }
+    Statement join(List<Statement> statements, Logical operator);
     // endregion
 
     // region internal methods

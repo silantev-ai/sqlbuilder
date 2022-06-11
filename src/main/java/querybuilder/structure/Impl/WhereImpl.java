@@ -2,9 +2,11 @@ package querybuilder.structure.Impl;
 
 
 import querybuilder.structure.*;
+import querybuilder.structure.enums.Logical;
 
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WhereImpl implements Where {
@@ -35,12 +37,12 @@ public class WhereImpl implements Where {
 
     @Override
     public OpenBracket openBracket() {
-        return ExprFactory.openBracket(this);
+        return SqlStructureFactory.openBracket(this);
     }
 
     @Override
     public Statement statement(Statement statement) {
-        return ExprFactory.statement(this, statement);
+        return SqlStructureFactory.statement(this, statement);
     }
 
     @Override
@@ -53,5 +55,17 @@ public class WhereImpl implements Where {
             throw new RuntimeException("Invalid where block");
         }
         return queryBuilder;
+    }
+
+    @Override
+    public Statement join(List<Statement> statements, Logical operator) {
+        for (int i = 0; i < statements.size() - 1; i++) {
+            Statement s = statements.get(i);
+            statement(s);
+            s.operator(operator);
+        }
+        Statement last = statements.get(statements.size() - 1);
+        statement(last);
+        return last;
     }
 }

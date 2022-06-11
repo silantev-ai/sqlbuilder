@@ -1,37 +1,33 @@
 package querybuilder.structure.Impl.statement;
 
 import querybuilder.structure.*;
-import querybuilder.structure.Impl.ExprFactory;
+import querybuilder.structure.Impl.SqlStructureFactory;
+import querybuilder.structure.Impl.Table;
 import querybuilder.structure.enums.Logical;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.From;
 import javax.persistence.criteria.Predicate;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
-public class StatementImpl implements Statement {
+class StatementImpl implements Statement {
     private Where where;
-    protected final String tableAlias;
-    protected final String field;
-    protected final Object value;
+    protected final BiFunction<CriteriaBuilder, Function<Table, From<?, ?>>, Predicate> predicateFunction;
+    protected final boolean valueIsNull;
 
-    public StatementImpl(String tableAlias, String field, Object value) {
-        this.field = field;
-        this.value = value;
-        this.tableAlias = tableAlias;
+    public StatementImpl(BiFunction<CriteriaBuilder, Function<Table, From<?, ?>>, Predicate> predicateFunction, boolean valueIsNull) {
+        this.predicateFunction = predicateFunction;
+        this.valueIsNull = valueIsNull;
     }
 
     @Override
-    public Predicate getPredicate(CriteriaBuilder cb, From<?, ?> source) {
+    public Predicate getPredicate(CriteriaBuilder cb, Function<Table, From<?, ?>> sourceSupplier) {
         // dummy expression if value is not present
-        if (value == null) {
+        if (valueIsNull) {
             return cb.equal(cb.literal(1), 1);
         }
-        return null;
-    }
-
-    @Override
-    public String getAlias() {
-        return tableAlias;
+        return predicateFunction.apply(cb, sourceSupplier);
     }
 
     @Override
@@ -41,12 +37,12 @@ public class StatementImpl implements Statement {
 
     @Override
     public LogicalOperator operator(Logical operator) {
-        return ExprFactory.operator(where, operator);
+        return SqlStructureFactory.operator(where, operator);
     }
 
     @Override
     public CloseBracket closeBracket() {
-        return ExprFactory.closeBracket(where);
+        return SqlStructureFactory.closeBracket(where);
     }
 
     @Override

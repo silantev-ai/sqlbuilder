@@ -14,12 +14,12 @@ public class CloseBracketImpl extends WhereTokenAbstract implements CloseBracket
 
     @Override
     public LogicalOperator operator(Logical operator) {
-        return ExprFactory.operator(where, operator);
+        return SqlStructureFactory.operator(where, operator);
     }
 
     @Override
     public CloseBracket closeBracket() {
-        return ExprFactory.closeBracket(where);
+        return SqlStructureFactory.closeBracket(where);
     }
 
     @Override

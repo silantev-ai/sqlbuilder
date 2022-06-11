@@ -1,19 +1,9 @@
 package querybuilder.structure.Impl;
 
 import querybuilder.structure.*;
-import querybuilder.structure.enums.AggregateFunction;
 import querybuilder.structure.enums.Logical;
-import querybuilder.structure.enums.SortDirection;
 
-public class ExprFactory {
-    public static Field createField(String tableAlias, String field, SortDirection sortDirection, AggregateFunction aggregateFunc) {
-        return Field.builder()
-                .tableAlias(tableAlias)
-                .field(field)
-                .sortDirection(sortDirection)
-                .aggregateFunc(aggregateFunc)
-                .build();
-    }
+public class SqlStructureFactory {
 
     public static Statement statement(Where where, Statement statement) {
         where.getElements().addLast(statement);

@@ -12,11 +12,11 @@ public class OpenBracketImpl extends WhereTokenAbstract implements OpenBracket {
 
     @Override
     public OpenBracket openBracket() {
-        return ExprFactory.openBracket(where);
+        return SqlStructureFactory.openBracket(where);
     }
 
     @Override
     public Statement statement(Statement statement) {
-        return ExprFactory.statement(where, statement);
+        return SqlStructureFactory.statement(where, statement);
     }
 }

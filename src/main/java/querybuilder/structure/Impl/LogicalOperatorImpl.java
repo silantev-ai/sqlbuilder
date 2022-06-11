@@ -1,10 +1,9 @@
 package querybuilder.structure.Impl;
 
-import querybuilder.structure.LogicalOperator;
-import querybuilder.structure.OpenBracket;
-import querybuilder.structure.Statement;
-import querybuilder.structure.Where;
+import querybuilder.structure.*;
 import querybuilder.structure.enums.Logical;
+
+import java.util.function.BiFunction;
 
 public class LogicalOperatorImpl extends WhereTokenAbstract implements LogicalOperator {
 
@@ -22,11 +21,16 @@ public class LogicalOperatorImpl extends WhereTokenAbstract implements LogicalOp
 
     @Override
     public OpenBracket openBracket() {
-        return ExprFactory.openBracket(where);
+        return SqlStructureFactory.openBracket(where);
     }
 
     @Override
     public Statement statement(Statement statement) {
-        return ExprFactory.statement(where, statement);
+        return SqlStructureFactory.statement(where, statement);
+    }
+
+    @Override
+    public <T> Statement statement(BiFunction<Where, T, Statement> func, T value) {
+        return func.apply(where, value);
     }
 }
